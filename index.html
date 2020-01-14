@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="./elementUi/element.css">
+    <link rel="stylesheet" href="./css/reset.css">
+    <link rel="stylesheet" href="./css/main.css">
+</head>
+<body class="scrollbar_ul">
+    <div class="mainBox">
+        <div class="navbody">
+            <div class="navItem"
+                 :class="[{'active':activeIndex==index}]"
+                 v-for="navItem,index in navList"
+                 @click="checkIt(index)"
+            >{{navItem.label}}</div>
+        </div>
+        <div class="contentBody">
+            <div class="chartBody chart-1" v-if="activeIndex==0">
+                <div id="chart-1-1"></div>
+                <div id="chart-1-2"></div>
+                <div id="chart-1-3"></div>
+                <div id="chart-1-4"></div>
+            </div>
+            <div class="chartBody chart-2" v-else-if="activeIndex==1">
+                <div id="chart-2-1"></div>
+                <div id="chart-2-2"></div>
+                <div id="chart-2-3"></div>
+                <div id="chart-2-4"></div>
+            </div>
+            <div class="chartBody chart-3" v-else-if="activeIndex==2">
+                <div id="chart-3-1"></div>
+                <div id="chart-3-2"></div>
+                <div id="chart-3-3"></div>
+                <div id="chart-3-4"></div>
+            </div>
+            <div class="chartBody chart-3" v-else-if="activeIndex==3">
+                <div id="chart-4-1"></div>
+                <div id="chart-4-2"></div>
+                <div id="chart-4-3"></div>
+                <div id="chart-4-4"></div>
+            </div>
+        </div>
+    </div>
+    <script src="./js/vue.min.js"></script>
+    <script src="./js/axios.min.js"></script>
+    <script src="./elementUi/element.js"></script>
+    <script src="./js/echarts.min.js"></script>
+    <script src="./js/main.js"></script>
+</body>
+</html>
