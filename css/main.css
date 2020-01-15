@@ -116,6 +116,26 @@
   width: 50%;
   height: 50%;
 }
+.mainBox .contentBody .chartBody.chart-5 > div {
+  padding: 10px;
+  box-sizing: border-box;
+}
+.mainBox .contentBody .chartBody.chart-5 #chart-5-1 {
+  width: 50%;
+  height: 50%;
+}
+.mainBox .contentBody .chartBody.chart-5 #chart-5-2 {
+  width: 50%;
+  height: 50%;
+}
+.mainBox .contentBody .chartBody.chart-5 #chart-5-3 {
+  width: 50%;
+  height: 50%;
+}
+.mainBox .contentBody .chartBody.chart-5 #chart-5-4 {
+  width: 50%;
+  height: 50%;
+}
 /* 滚动条样式 */
 .scrollbar_ul::-webkit-scrollbar-track-piece {
   /* 滚动条凹槽的颜色，还可以设置边框属性 */
