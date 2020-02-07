@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="./css/reset.css">
     <link rel="stylesheet" href="./css/main.css">
 </head>
-<body class="scrollbar_ul">
+<body>
     <div class="mainBox">
         <div class="navbody">
             <div class="navItem"
@@ -16,7 +16,7 @@
                  @click="checkIt(index)"
             >{{navItem.label}}</div>
         </div>
-        <div class="contentBody">
+        <div class="contentBody scrollbar_ul">
             <div class="chartBody chart-1" v-if="activeIndex==0">
                 <div id="chart-1-1"></div>
                 <div id="chart-1-2"></div>
@@ -49,12 +49,17 @@
             <div class="chartBody chart-6" v-else-if="activeIndex==5">
                 <div id="chart-6-1"></div>
             </div>
+            <div class="chartBody chart-7" v-else-if="activeIndex==6">
+                <div id="chart-7-1"></div>
+            </div>
         </div>
     </div>
     <script src="./js/vue.min.js"></script>
     <script src="./js/axios.min.js"></script>
     <script src="./elementUi/element.js"></script>
     <script src="./js/echarts.min.js"></script>
+    <script src="./js/echarts.china.js"></script>
+    <script src="./js/d3.v5.min.js"></script>
     <script src="./js/main.js"></script>
 </body>
 </html>

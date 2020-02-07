@@ -6,14 +6,19 @@ new Vue({
             {label:'折线图',key:'ZXT',container:['2-1','2-2','2-3','2-4']},
             {label:'饼图',key:'BT',container:['3-1','3-2','3-3','3-4']},
             {label:'散点图',key:'SDT',container:['4-1','4-2','4-3','4-4']},
-            {label:'树图',key:'ST',container:['5-1','5-2','5-3','5-4']},
-            {label:'重力图',key:'ZLT',container:['6-1','6-2','6-3','6-4']},
+            {label:'树图',key:'ST',container:['5-1','5-2','5-3']},
+            {label:'重力图（力导图）',key:'ZLT',container:['6-1']},
+            {label:'地图',key:'ZLT',container:['7-1']},
         ],
-        activeIndex:0,
-
+        activeIndex:-1
     },
     methods: {
         checkIt(index){
+            if(!index && index!==0){
+                index = this.getStorage('activeIndex')||0;
+            }else{
+                this.setStorage('activeIndex',index);
+            }
             this.activeIndex = index;
             this.$nextTick(()=>{
                 this.initChart();
@@ -45,8 +50,7 @@ new Vue({
                 }else{
                     if(document.getElementById(`chart-${item}`)){
                         let myChart = echarts.init(document.getElementById(`chart-${item}`));
-                        myChart.clear();//清空当前图表
-                        myChart.setOption(json);
+                        this.renderFunc(myChart,json);
                     }
                 }
             });
@@ -141,8 +145,7 @@ new Vue({
 
             if(document.getElementById(`chart-4-2`)){
                 let myChart = echarts.init(document.getElementById(`chart-4-2`));
-                myChart.clear();//清空当前图表
-                myChart.setOption(option);
+                this.renderFunc(myChart,option);
             }
         },
         async renderChart4_3(jsonReturn){
@@ -199,8 +202,7 @@ new Vue({
             };
             if(document.getElementById(`chart-4-3`)){
                 let myChart = echarts.init(document.getElementById(`chart-4-3`));
-                myChart.clear();//清空当前图表
-                myChart.setOption(option);
+                this.renderFunc(myChart,option);
             }
         },
         async renderChart4_4(jsonReturn){
@@ -411,9 +413,7 @@ new Vue({
                     }
                 });
             }
-
-            myChart.clear();//清空当前图表
-            myChart.setOption(option);
+            this.renderFunc(myChart,option);
         },
         async renderChart5_1(){
             let data = {
@@ -588,8 +588,7 @@ new Vue({
 
             if(document.getElementById(`chart-5-1`)){
                 let myChart = echarts.init(document.getElementById(`chart-5-1`));
-                myChart.clear();//清空当前图表
-                myChart.setOption(option);
+                this.renderFunc(myChart,option);
             }
         },
         async renderChart5_2(jsonReturn){
@@ -602,9 +601,7 @@ new Vue({
             }
             let myChart = echarts.init(document.getElementById(`chart-5-2`));
             myChart.hideLoading();
-
-            myChart.clear();//清空当前图表
-            myChart.setOption(option = {
+            let option = {
                 tooltip: {
                     trigger: 'item',
                     triggerOn: 'mousemove'
@@ -646,7 +643,8 @@ new Vue({
                         animationDurationUpdate: 750
                     }
                 ]
-            });
+            }
+            this.renderFunc(myChart,option);
         },
         async renderChart5_3(){
             let struct_colors = [
@@ -738,8 +736,7 @@ new Vue({
             }
             format_struct_data(info2.children, structs_datas);
             let myChart = echarts.init(document.getElementById(`chart-5-3`));
-            myChart.clear();//清空当前图表
-            myChart.setOption(option = {
+            let option = {
                 title: {
                     text: '树图构建组织结构',
                     subtext: '2017/07 by liang',
@@ -759,7 +756,7 @@ new Vue({
                 },
 
                 series: [{
-                    name: 'org',
+                    name: '还原',
                     type: 'treemap',
                     visibleMin: 300,
                     // data: format_struct_data(info2.children, structs_datas),
@@ -844,21 +841,367 @@ new Vue({
                         }
                     },
                 }]
-            });
+            }
+            this.renderFunc(myChart,option);
 
             document.oncontextmenu = function() {
                 return false;
             };
             myChart.on('contextmenu', showMenu);
         },
-        renderChart6_1(){
+        renderChart7_1(jsonReturn){
+            let arr = jsonReturn.data;
+            let myChart = echarts.init(document.getElementById(`chart-7-1`));
+            
+            var mapName = 'china'
+            var data =[],toolTipData = [];
+            arr.map(item=>{
+                data.push({
+                    name: item.provinceShortName,
+                    value: item.confirmedCount
+                })
+                // 总数量
+                toolTipData.push({
+                    name: item.provinceShortName,
+                    value: [{
+                        name: "确诊",
+                        value: item.confirmedCount
+                    }]
+                })
+            })
 
+            var geoCoordMap = {};
+
+            // 排序
+            function keysort(key) {
+                return function(a, b) {
+                    return Number(b[key] - a[key])
+                }
+            }
+            data.sort(keysort('value')); //按照fev1与fvc的和进行排序
+
+            /*获取地图数据*/
+            var mapFeatures = echarts.getMap(mapName).geoJson.features;
+            mapFeatures.forEach(function(v) {
+                // 地区名称
+                var name = v.properties.name;
+                // 地区经纬度
+                geoCoordMap[name] = v.properties.cp;
+            });
+            // console.log("============geoCoordMap===================")
+            // console.log(geoCoordMap)
+            // console.log("================data======================")
+            // console.log(data)
+            // console.log(toolTipData)
+            var max = 480, //设置的气泡等大小的系数
+                min = 9; // todo //设置的气泡等大小的系数
+            var maxSize4Pin = 100, //设置的气泡等大小的系数
+                minSize4Pin = 20; //设置的气泡等大小的系数
+
+            var convertData = function(dt) {// 处理覆盖上面的点，得有经纬度，所以下面的value有经纬度
+                var res = [];
+                for (var i = 0; i < dt.length; i++) {
+                    var geoCoord = geoCoordMap[dt[i].name];
+                    if (geoCoord) {
+                        res.push({
+                            name: dt[i].name,
+                            value: geoCoord.concat(dt[i].value),//这里把经纬度
+                        });
+                    }
+                }
+                return res;
+            };
+            option = {
+
+                backgroundColor:'#fff',
+                title: {
+                    text: "2020新冠病毒分布-2020-02-07",
+                    x: 'left',
+                    textStyle: {
+                        color: "#0009",
+                        fontSize: 20,
+                        fontWeight: 'normal'
+                    },
+                    subtextStyle: {
+                        fontSize: 14,
+                    }
+                },
+                tooltip: {
+                    trigger: 'item',
+                    formatter: function(params) {
+                        if(typeof params.data.value == 'number'){
+                            return ` 地区：${params.data.name}<br> 确诊：${params.data.value}例`;
+                        }else{
+                            return ` 地区：${params.data.name}<br> 确诊：${params.data.value[2]}例`;
+                        }
+                        // console.log(typeof(params.value)[2])
+                        var toolTiphtml = ''
+                        for (var i = 0; i < toolTipData.length; i++) {
+                            if (params.name == toolTipData[i].name) {
+                                toolTiphtml += toolTipData[i].name + '（设备覆盖情况）<br>'
+                                for (var j = 0; j < toolTipData[i].value.length; j++) {
+                                    toolTiphtml += toolTipData[i].value[j].name + '：' + toolTipData[i].value[j].value + "<br>"
+                                }
+                            }
+                        }
+                        // console.log(toolTiphtml)
+                        // console.log(convertData(data))
+                        return toolTiphtml;
+                    }
+                },
+                // legend: {
+                //     orient: 'vertical',
+                //     y: 'bottom',
+                //     x: 'right',
+                //     data: ['credit_pm2.5'],
+                //     textStyle: {
+                //         color: '#fff'
+                //     }
+                // },
+                visualMap: {
+                    show: true, //去掉层级过滤显示
+                    min: 0,
+                    // max: 200,//取活跃值最高的当上限
+                    max: 1600,//data[0].value, //取活跃值最高的当上限
+                    left: 'left',
+                    top: 'bottom',
+                    text: ['高', '低'], // 文本，默认为数值文本
+                    calculable: true,
+                    seriesIndex: [1],
+                    textStyle: {
+                        color: '#C8D3FF',
+                    },
+                    inRange: {
+                        // color: ['#3B5077', '#031525'] // 蓝黑
+                        // color: ['#ffc0cb', '#800080'] // 红紫
+                        // color: ['#3C3B3F', '#605C3C'] // 黑绿
+                        // color: ['#0f0c29', '#302b63', '#24243e'] // 黑紫黑
+                        // color: ['#23074d', '#cc5333'] // 紫红
+                
+                        // color: ['#1488CC', '#031525'] // 浅蓝
+                        color: ['#ffaa85', '#ff7b69', '#bf2121', '#af2121', '#9f2121', '#8f2121', '#7f2121', '#6f1818'] // 蓝绿
+                        // color: ['#5474F6', '#3652D5', '#2542AF', '#1D1663']
+                    }
+                },
+                /*工具按钮组*/
+                // toolbox: {
+                //     show: true,
+                //     orient: 'vertical',
+                //     left: 'right',
+                //     top: 'center',
+                //     feature: {
+                //         dataView: {
+                //             readOnly: false
+                //         },
+                //         restore: {},
+                //         saveAsImage: {}
+                //     }
+                // },
+                geo: {
+                    show: true,
+                    map: mapName,
+                    label: {
+                        normal: {
+                            show: false
+                        },
+                        emphasis: {
+                            show: false,
+                        }
+                    },
+                    layoutCenter: ["50%", "50%"],
+                    layoutSize: "120%",
+                    roam: true, //是否可以放大缩小
+                    itemStyle: {
+                        normal: {
+                            // areaColor: '#031525',//所有地图区块默认的
+                            // areaColor: '#3764FF', //所有地图区块默认的
+                            // borderColor: '#3B5077',
+                        },
+                        emphasis: {
+                            // areaColor: '#2B91B7',//省份放上去的颜色
+                            areaColor: 'rgba(55, 100, 255, 0.5)', //省份放上去的颜色
+                        }
+                    }
+                },
+                series: [{
+                        name: '散点', //省份的名称以及名称旁边的，根据数据来显示：有数据就显示没有数据就不显示
+                        type: 'scatter',
+                        coordinateSystem: 'geo',
+                        data: convertData(toolTipData),
+                        symbolSize: function(val) {
+                            // if (Number(val[2].value) + Number(val[3].value) > 0) {
+                            //     return 20; //固定
+                            // } else {
+                            //     return 0; //不显示
+                            // }
+                            return val[0].value / 20;//根据数据自适应大小
+
+                        },
+                        label: {
+                            normal: {
+                                formatter: '{b}',
+                                position: 'right',
+                                show: true
+                            },
+                            emphasis: {
+                                show: true
+                            }
+                        },
+                        itemStyle: {
+                            normal: {
+                                color: '#05C3F9'
+                            }
+                        }
+                    },
+                    {
+                        type: 'map',
+                        map: mapName,
+                        geoIndex: 0,
+                        aspectScale: 0.75, //长宽比
+                        showLegendSymbol: false, // 存在legend时显示
+                        label: {
+                            normal: {
+                                show: true
+                            },
+                            emphasis: {
+                                show: false,
+                                textStyle: {
+                                    color: '#fff'
+                                }
+                            }
+                        },
+                        roam: true,
+                        itemStyle: {
+                            normal: {
+                                areaColor: '#031525',
+                                borderColor: '#3B5077',
+                            },
+                            emphasis: {
+                                areaColor: '#2B91B7'
+                            }
+                        },
+                        animation: false,
+                        data: data
+                    },
+                    // 这里注释的是总数的分布
+                    // {
+                    //     name: '点',
+                    //     type: 'scatter',
+                    //     coordinateSystem: 'geo',
+                    //     symbol: 'pin', //气泡
+                    //     symbolSize: function(val) {
+                    //         var a = (maxSize4Pin - minSize4Pin) / (max - min);
+                    //         var b = minSize4Pin - a * min;
+                    //         b = maxSize4Pin - a * max;
+                    //         return a * val[2] + b;//气泡的大小随之数据变化
+                    //     },
+                    //     label: {
+                    //         normal: {
+                    //             show: true,
+                    //             formatter: function(params) {
+                    //                 return params.data.value[2]
+                    //             },
+                    //             textStyle: {
+                    //                 color: '#fff',
+                    //                 fontSize: 9,
+                    //             }
+                    //         }
+                    //     },
+                    //     itemStyle: {
+                    //         normal: {
+                    //             color: '#F62157', //标志颜色.气泡颜色
+                    //         }
+                    //     },
+                    //     zlevel: 6,
+                    //     data: convertData(data),
+                    // },
+                    // 这里的是活跃的分布
+                    {
+                        name: '点',
+                        type: 'scatter',
+                        coordinateSystem: 'geo',
+                        symbol: 'pin', //气泡
+                        symbolSize: function(val) {
+                            var a = (maxSize4Pin - minSize4Pin) / (max - min);
+                            var b = minSize4Pin - a * min;
+                            b = maxSize4Pin - a * max;
+                            // 没有活跃度的不显示气泡有的才显示
+                            return 50
+
+                        },
+                        label: {
+                            normal: {
+                                show: true,
+                                formatter: function(params) {
+                                    return params.data.value[2]
+                                },
+                                textStyle: {
+                                    color: '#fff',
+                                    fontSize: 15,
+                                }
+                            }
+                        },
+                        itemStyle: {
+                            normal: {
+                                color: '#F62157', //标志颜色.气泡颜色
+                            }
+                        },
+                        zlevel: 6,
+                        data: convertData(data),
+                    },
+                    // {
+                    //     name: 'Top 5',
+                    //     type: 'effectScatter',
+                    //     coordinateSystem: 'geo',
+                    //     data: convertData(data.sort(function(a, b) {
+                    //         return b.value - a.value;
+                    //     }).slice(0, 5)),
+                    //     symbolSize: function(val) {
+                    //         return val[2] / 10 > 10 ? val[2] / 10 : 10; //自适应大小
+                    //     },
+                    //     showEffectOn: 'render',
+                    //     rippleEffect: {
+                    //         period: 10, //涟漪动画周期
+                    //         brushType: 'stroke'
+                    //     },
+                    //     hoverAnimation: false,
+                    //     label: {
+                    //         normal: {
+                    //             formatter: '{b}',
+                    //             position: 'right',
+                    //             show: true
+                    //         }
+                    //     },
+                    //     itemStyle: {
+                    //         normal: {
+                    //             color: 'yellow',
+                    //             shadowBlur: 10,
+                    //             shadowColor: 'yellow'
+                    //         }
+                    //     },
+                    //     zlevel: 1
+                    // },
+                ]
+            };
+            myChart.setOption(option);
+        },
+        renderFunc(echartObj,option){
+            echartObj.clear();
+            echartObj.setOption(option);
+            echartObj.resize();
+        },
+        setStorage(key,val){
+            window.sessionStorage.setItem(key,val);
+        },
+        getStorage(key){
+            return window.sessionStorage.getItem(key);
         },
         getJson(url){
             return axios.get(url);
         }
     },
     mounted() {
+        this.checkIt();
         this.initChart();
     }
 });
