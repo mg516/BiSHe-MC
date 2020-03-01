@@ -1,6 +1,11 @@
 new Vue({
-    el: '.mainBox',
-    data: {
+    el: '.mainBox',//将class为mainBox的DOM元素，作为vue实例的挂载目标
+    data: {//Vue 实例的数据对象
+
+        // 菜单列表
+        // label：菜单名称
+        // key：菜单唯一标识
+        // container：当前菜单内容标识
         navList: [
             {label:'条形图',key:'TXT',container:['1-1','1-2','1-3','1-4']},
             {label:'折线图',key:'ZXT',container:['2-1','2-2','2-3','2-4']},
@@ -10,37 +15,51 @@ new Vue({
             {label:'重力图（力导图）',key:'ZLT',container:['6-1']},
             {label:'地图',key:'ZLT',container:['7-1']},
         ],
-        activeIndex:-1
+        activeIndex:-1,//当前选中的tab序号
     },
+    // 可以直接通过Vue实例访问,或者在指令表达式中使用的方法
     methods: {
+        // tab标签页点击事件
+        // index：tab标签的序号
         checkIt(index){
             if(!index && index!==0){
+                // 若方法未传递参数，则取缓存序号
+                // 若不存在缓存，则取第一个tab标签
                 index = this.getStorage('activeIndex')||0;
             }else{
+                // 若方法有参数，则将序号缓存到本地（以便刷新页面可直接定位到当前选中的tab页）
                 this.setStorage('activeIndex',index);
             }
+            // 将要显示的tab页序号赋值
             this.activeIndex = index;
+            // 待页面DOM更新完毕，执行初始化图表函数
             this.$nextTick(()=>{
                 this.initChart();
             });
         },
+        // 初始化echart图表
         initChart(){
             // 获取当前类型图表的容器标识
             let container = this.navList[this.activeIndex].container;
-            let chartData = [];
+            let chartData = [];//定义变量：图表数据
+            // 若当前tab页无内容标识，认为不需要展示图表，直接终止程序
             if(!container || container.length<0) return '';
-            container.map(async item=>{
-                let json = null;
+            // 遍历当前tab页内容，逐个渲染当前页的图表
+            container.map(async item=>{//async：同步方式请求接口,可等待请求响应再执行后续操作
+                let json = null;//定义变量：echart图表渲染所需的option
                 try{
+                    // 请求本地保存的，指定图表的json文件
                     let jsonReturn = await this.getJson(`./json/chart-${item}.json`);
                     json = jsonReturn.data;
                 }catch (e) {
+                    // 若请求响应失败，则终止程序
                     json = null;
                     return '';
                 }
                 chartData.push(json);//保存当前页面数据-没用
+                // 存在复杂图表，数据需要进一步处理
                 if(json.complexData){
-                    // 复杂参数的图表：4-2
+                    // 判断：当存在复杂图表，即json.complexData为真时
                     let key = item.replace('-','_');
                     if(this[`renderChart${key}`]){
                         this[`renderChart${key}`](json);
@@ -48,13 +67,17 @@ new Vue({
                         return '';
                     }
                 }else{
+                    // 判断：若不是复杂图表，直接调用echarts的原生方法，渲染图表
                     if(document.getElementById(`chart-${item}`)){
+                        // 创建echarts实例
                         let myChart = echarts.init(document.getElementById(`chart-${item}`));
+                        // 执行渲染图表自定义方法
                         this.renderFunc(myChart,json);
                     }
                 }
             });
         },
+        // 渲染第四tab页的第二个图表（下同解释，函数内均为对数据的处理）
         renderChart4_2(){
             let data = [
                 [[28604,77,17096869,'Australia',1990],[31163,77.4,27662440,'Canada',1990],[1516,68,1154605773,'China',1990],[13670,74.7,10582082,'Cuba',1990],[28599,75,4986705,'Finland',1990],[29476,77.1,56943299,'France',1990],[31476,75.4,78958237,'Germany',1990],[28666,78.1,254830,'Iceland',1990],[1777,57.7,870601776,'India',1990],[29550,79.1,122249285,'Japan',1990],[2076,67.9,20194354,'North Korea',1990],[12087,72,42972254,'South Korea',1990],[24021,75.4,3397534,'New Zealand',1990],[43296,76.8,4240375,'Norway',1990],[10088,70.8,38195258,'Poland',1990],[19349,69.6,147568552,'Russia',1990],[10670,67.3,53994605,'Turkey',1990],[26424,75.7,57110117,'United Kingdom',1990],[37062,75.4,252847810,'United States',1990]],
@@ -1185,23 +1208,30 @@ new Vue({
             };
             myChart.setOption(option);
         },
+        // 渲染图表方法
         renderFunc(echartObj,option){
-            echartObj.clear();
-            echartObj.setOption(option);
-            echartObj.resize();
+            echartObj.clear();//清空当前容器
+            echartObj.setOption(option);//导入图表option参数进行渲染
+            echartObj.resize();//根据容器尺寸重置图表大小
         },
+        // 缓存数据到本地
         setStorage(key,val){
             window.sessionStorage.setItem(key,val);
         },
+        // 获取本地缓存数据
         getStorage(key){
             return window.sessionStorage.getItem(key);
         },
+        // 请求本地json文件
         getJson(url){
             return axios.get(url);
         }
     },
+    // vue实例挂载后执行的函数
     mounted() {
+        // 选中指定tab页
         this.checkIt();
+        // 初始化echart图表
         this.initChart();
     }
 });
