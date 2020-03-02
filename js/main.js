@@ -1206,7 +1206,7 @@ new Vue({
                     // },
                 ]
             };
-            myChart.setOption(option);
+            this.renderFunc(myChart,option);
         },
         // 渲染图表方法
         renderFunc(echartObj,option){
