@@ -11,8 +11,8 @@
     <link rel="stylesheet" href="./css/main.css">
 </head>
 <body>
-    <div class="mainBox">
-        <div class="navbody v-cloak">
+    <div class="mainBox" v-cloak>
+        <div class="navbody">
             <div class="navItem"
                  :class="[{'active':activeIndex==index}]"
                  v-for="navItem,index in navList"
